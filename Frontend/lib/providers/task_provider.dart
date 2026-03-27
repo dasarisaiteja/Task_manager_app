@@ -7,23 +7,43 @@ class TaskProvider extends ChangeNotifier {
   List<Task> tasks = [];
   List<Task> filteredTasks = [];
 
+  bool isLoading = false;
+  String searchQuery = "";
+
   final api = ApiService();
   Timer? _debounce;
 
   Future<void> loadTasks() async {
-    tasks = await api.fetchTasks();
-    filteredTasks = tasks;
-    notifyListeners();
+    try {
+      isLoading = true;
+      notifyListeners();
+
+      tasks = await api.fetchTasks();
+      filteredTasks = tasks;
+    } catch (e) {
+      print("LOAD ERROR: $e");
+    } finally {
+      isLoading = false;
+      notifyListeners();
+    }
   }
 
   Future<void> addTask(Task task) async {
-    await api.createTask(task);
-    await loadTasks();
+    try {
+      await api.createTask(task);
+      await loadTasks();
+    } catch (e) {
+      throw Exception("Failed to create task");
+    }
   }
 
   Future<void> updateTask(Task task) async {
-    await api.updateTask(task);
-    await loadTasks();
+    try {
+      await api.updateTask(task);
+      await loadTasks();
+    } catch (e) {
+      throw Exception("Failed to update task");
+    }
   }
 
   Future<void> deleteTask(int id) async {
@@ -32,6 +52,8 @@ class TaskProvider extends ChangeNotifier {
   }
 
   void search(String query) {
+    searchQuery = query;
+
     if (_debounce?.isActive ?? false) _debounce!.cancel();
 
     _debounce = Timer(Duration(milliseconds: 300), () {

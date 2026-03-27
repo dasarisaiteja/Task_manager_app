@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+
 import '../providers/task_provider.dart';
 import '../widgets/task_card.dart';
 import 'task_form.dart';
@@ -15,49 +16,67 @@ class _HomeScreenState extends State<HomeScreen> {
   @override
   void initState() {
     super.initState();
-    Provider.of<TaskProvider>(context, listen: false).loadTasks();
+      Future.microtask(() {
+      Provider.of<TaskProvider>(context, listen: false).loadTasks();
+    });
   }
 
   @override
   Widget build(BuildContext context) {
-    var provider = Provider.of<TaskProvider>(context);
+    final provider = Provider.of<TaskProvider>(context);
 
     return Scaffold(
       appBar: AppBar(title: Text("Tasks")),
       body: Column(
         children: [
-          TextField(
-            decoration: InputDecoration(hintText: "Search..."),
-            onChanged: provider.search,
+          Padding(
+            padding: const EdgeInsets.all(8.0),
+            child: TextField(
+              decoration: InputDecoration(
+                hintText: "Search...",
+                border: OutlineInputBorder(),
+              ),
+              onChanged: provider.search,
+            ),
           ),
 
           DropdownButton<String>(
             value: selectedStatus,
-            items: ["all", "todo", "in_progress", "done"]
-                .map((e) => DropdownMenuItem(value: e, child: Text(e)))
-                .toList(),
+            items: [
+              DropdownMenuItem(value: "all", child: Text("All")),
+              DropdownMenuItem(value: "todo", child: Text("To-Do")),
+              DropdownMenuItem(value: "in_progress", child: Text("In Progress")),
+              DropdownMenuItem(value: "done", child: Text("Done")),
+            ],
             onChanged: (val) {
               setState(() => selectedStatus = val!);
             },
           ),
 
           Expanded(
-            child: ListView(
-              children: provider.filteredTasks
-                  .where((task) =>
-                      selectedStatus == "all" ||
-                      task.status == selectedStatus)
-                  .map((task) => TaskCard(task))
-                  .toList(),
-            ),
+            child: provider.isLoading
+                ? Center(child: CircularProgressIndicator())
+                : ListView(
+                    children: provider.filteredTasks
+                        .where((task) =>
+                            selectedStatus == "all" ||
+                            task.status == selectedStatus)
+                        .map((task) => TaskCard(task))
+                        .toList(),
+                  ),
           )
         ],
       ),
+
       floatingActionButton: FloatingActionButton(
-        onPressed: () => Navigator.push(
-          context,
-          MaterialPageRoute(builder: (_) => TaskForm()),
-        ),
+        onPressed: () async {
+          await Navigator.push(
+            context,
+            MaterialPageRoute(builder: (_) => TaskForm()),
+          );
+
+          Provider.of<TaskProvider>(context, listen: false).loadTasks();
+        },
         child: Icon(Icons.add),
       ),
     );
