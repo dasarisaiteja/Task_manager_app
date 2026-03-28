@@ -26,7 +26,6 @@ class _TaskFormState extends State<TaskForm> {
   void initState() {
     super.initState();
 
-    // ✅ FIXED: Draft only for new task
     if (widget.task != null) {
       title.text = widget.task!.title;
       desc.text = widget.task!.description;
